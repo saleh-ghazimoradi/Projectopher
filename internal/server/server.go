@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,6 +21,7 @@ type Server struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	ErrorLog     *log.Logger
+	logger       *slog.Logger
 }
 
 type Options func(*Server)
@@ -66,6 +68,12 @@ func WithErrorLog(errorLog *log.Logger) Options {
 	}
 }
 
+func WithLogger(logger *slog.Logger) Options {
+	return func(s *Server) {
+		s.logger = logger
+	}
+}
+
 func (s *Server) Connect() error {
 	addr := fmt.Sprintf("%s:%s", s.Host, s.Port)
 	server := &http.Server{
@@ -83,7 +91,7 @@ func (s *Server) Connect() error {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		se := <-quit
-		log.Println("caught signal", "signal", se.String())
+		s.logger.Info("caught signal", "signal", se.String())
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -93,7 +101,7 @@ func (s *Server) Connect() error {
 			shutdownError <- err
 		}
 
-		log.Println("completing background tasks", "addr", server.Addr)
+		s.logger.Info("completing background tasks", "addr", server.Addr)
 		shutdownError <- nil
 	}()
 
@@ -105,7 +113,7 @@ func (s *Server) Connect() error {
 		return err
 	}
 
-	log.Println("Stopped server", "addr", server.Addr)
+	s.logger.Info("stopped server", "addr", server.Addr)
 
 	return nil
 }
