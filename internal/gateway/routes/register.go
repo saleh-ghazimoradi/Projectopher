@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"github.com/julienschmidt/httprouter"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/middlewares"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
 	"net/http"
 )
 
@@ -25,9 +27,12 @@ func WithMiddleware(middlewares *middlewares.Middleware) Options {
 }
 
 func (r *Register) RegisterRoutes() http.Handler {
-	mux := http.NewServeMux()
-	r.healthRoute.HealthRoutes(mux)
-	return r.middlewares.Recover(r.middlewares.Logging(r.middlewares.CORS(mux)))
+	router := httprouter.New()
+	router.NotFound = http.HandlerFunc(helper.HTTPRouterNotFoundResponse)
+	router.MethodNotAllowed = http.HandlerFunc(helper.HTTPRouterMethodNotAllowedResponse)
+	r.healthRoute.HealthRoutes(router)
+
+	return r.middlewares.Recover(r.middlewares.Logging(r.middlewares.CORS(router)))
 }
 
 func NewRegister(opts ...Options) *Register {
