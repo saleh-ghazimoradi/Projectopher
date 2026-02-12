@@ -13,8 +13,14 @@ var (
 )
 
 type Config struct {
-	Server  Server
-	MongoDB MongoDB
+	Application Application
+	Server      Server
+	MongoDB     MongoDB
+}
+
+type Application struct {
+	Version     string `env:"VERSION"`
+	Environment string `env:"ENVIRONMENT"`
 }
 
 type Server struct {
