@@ -75,6 +75,14 @@ func InternalServerError(w http.ResponseWriter, message string, err error) {
 	ErrorResponse(w, http.StatusInternalServerError, message, err)
 }
 
+func HTTPRouterNotFoundResponse(w http.ResponseWriter, r *http.Request) {
+	ErrorResponse(w, http.StatusNotFound, "Not found", nil)
+}
+
+func HTTPRouterMethodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
+	ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed", nil)
+}
+
 func PaginatedSuccessResponse(w http.ResponseWriter, message string, data any, meta PaginatedMeta) {
 	paginatedResp := PaginatedResponse{
 		Response: Response{
