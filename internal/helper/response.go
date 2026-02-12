@@ -17,10 +17,10 @@ type PaginatedResponse struct {
 }
 
 type PaginatedMeta struct {
-	Page      int   `json:"page"`
-	Limit     int   `json:"limit"`
+	Page      int64 `json:"page"`
+	Limit     int64 `json:"limit"`
 	Total     int64 `json:"total"`
-	TotalPage int   `json:"total_page"`
+	TotalPage int64 `json:"total_page"`
 }
 
 func SuccessResponse(w http.ResponseWriter, message string, data any) {
@@ -73,6 +73,18 @@ func NotFoundResponse(w http.ResponseWriter, message string) {
 
 func InternalServerError(w http.ResponseWriter, message string, err error) {
 	ErrorResponse(w, http.StatusInternalServerError, message, err)
+}
+
+func FailedValidationResponse(w http.ResponseWriter, message string) {
+	ErrorResponse(w, http.StatusUnprocessableEntity, message, nil)
+}
+
+func EditConflictResponse(w http.ResponseWriter, message string, err error) {
+	ErrorResponse(w, http.StatusConflict, message, err)
+}
+
+func RateLimitExceededResponse(w http.ResponseWriter, message string, err error) {
+	ErrorResponse(w, http.StatusTooManyRequests, message, err)
 }
 
 func HTTPRouterNotFoundResponse(w http.ResponseWriter, r *http.Request) {
