@@ -13,7 +13,7 @@ type CreateMovieReq struct {
 }
 
 type MovieResp struct {
-	Id          string  `json:"id,omitempty"`
+	Id          string  `json:"id"`
 	ImdbId      string  `json:"imdb_id"`
 	Title       string  `json:"title"`
 	PosterPath  string  `json:"poster_path"`
