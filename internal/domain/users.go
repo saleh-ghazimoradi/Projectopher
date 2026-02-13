@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type UserRole string
+
+const (
+	UserRoleUser  UserRole = "user"
+	UserRoleAdmin UserRole = "admin"
+)
+
 type User struct {
 	Id            bson.ObjectID `bson:"_id,omitempty"`
 	UserId        string        `bson:"user_id"`
@@ -12,10 +19,16 @@ type User struct {
 	LastName      string        `bson:"last_name"`
 	Email         string        `bson:"email"`
 	Password      string        `bson:"password"`
-	Role          string        `bson:"role"`
+	Role          UserRole      `bson:"role"`
 	CreatedAt     time.Time     `bson:"created_at"`
 	UpdatedAt     time.Time     `bson:"updated_at"`
-	Token         string        `bson:"token"`
-	RefreshToken  string        `bson:"refresh_token"`
 	FavoriteGenre []Genre       `bson:"favorite_genre"`
+}
+
+type RefreshToken struct {
+	Id        bson.ObjectID `bson:"_id,omitempty"`
+	UserId    bson.ObjectID `bson:"user_id"`
+	Token     string        `bson:"token"`
+	ExpiresAt time.Time     `bson:"expires_at"`
+	CreatedAt time.Time     `bson:"created_at"`
 }
