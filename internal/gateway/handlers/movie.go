@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/dto"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
@@ -45,8 +44,6 @@ func (m *MovieHandler) GetMovie(w http.ResponseWriter, r *http.Request) {
 		helper.BadRequestResponse(w, "Invalid id", errors.New("id is required"))
 		return
 	}
-
-	fmt.Printf("id: %s, type of id: %T\n", id, id)
 
 	movie, err := m.movieService.GetMovie(r.Context(), id)
 	if err != nil {
