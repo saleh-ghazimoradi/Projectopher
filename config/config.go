@@ -16,6 +16,7 @@ type Config struct {
 	Application Application
 	Server      Server
 	MongoDB     MongoDB
+	RateLimiter RateLimiter
 }
 
 type Application struct {
@@ -41,6 +42,12 @@ type MongoDB struct {
 	MaxPoolSize uint64        `env:"MONGODB_MAX_POOL_SIZE"`
 	MinPoolSize uint64        `env:"MONGODB_MIN_POOL_SIZE"`
 	Timeout     time.Duration `env:"MONGODB_TIMEOUT"`
+}
+
+type RateLimiter struct {
+	RPS     float64 `env:"RPS"`
+	Burst   int     `env:"BURST"`
+	Enabled bool    `env:"ENABLED"`
 }
 
 func GetInstance() (*Config, error) {
