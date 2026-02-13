@@ -83,8 +83,8 @@ func EditConflictResponse(w http.ResponseWriter, message string, err error) {
 	ErrorResponse(w, http.StatusConflict, message, err)
 }
 
-func RateLimitExceededResponse(w http.ResponseWriter, message string, err error) {
-	ErrorResponse(w, http.StatusTooManyRequests, message, err)
+func RateLimitExceededResponse(w http.ResponseWriter, message string) {
+	ErrorResponse(w, http.StatusTooManyRequests, message, nil)
 }
 
 func HTTPRouterNotFoundResponse(w http.ResponseWriter, r *http.Request) {
