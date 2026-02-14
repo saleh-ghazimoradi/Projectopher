@@ -14,7 +14,6 @@ const (
 
 type User struct {
 	Id            bson.ObjectID `bson:"_id,omitempty"`
-	UserId        string        `bson:"user_id"`
 	FirstName     string        `bson:"first_name"`
 	LastName      string        `bson:"last_name"`
 	Email         string        `bson:"email"`
