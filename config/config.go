@@ -17,11 +17,18 @@ type Config struct {
 	Server      Server
 	MongoDB     MongoDB
 	RateLimiter RateLimiter
+	JWT         JWT
 }
 
 type Application struct {
 	Version     string `env:"VERSION"`
 	Environment string `env:"ENVIRONMENT"`
+}
+
+type JWT struct {
+	Secret              string        `env:"JWT_SECRET"`
+	ExpiresIn           time.Duration `env:"JWT_EXPIRES_IN"`
+	RefreshTokenExpires time.Duration `env:"JWT_REFRESH_TOKEN_EXPIRES"`
 }
 
 type Server struct {
