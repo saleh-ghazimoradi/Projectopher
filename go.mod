@@ -6,6 +6,7 @@ require go.mongodb.org/mongo-driver/v2 v2.5.0
 
 require (
 	github.com/caarlos0/env/v11 v11.3.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect

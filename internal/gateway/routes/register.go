@@ -9,6 +9,7 @@ import (
 
 type Register struct {
 	healthRoute *HealthRoute
+	authRoute   *AuthRoute
 	movieRoute  *MovieRoute
 	genreRoute  *GenreRoute
 	rankRoute   *RankRoute
@@ -21,6 +22,12 @@ type Options func(*Register)
 func WithHealthRoute(healthRoute *HealthRoute) Options {
 	return func(r *Register) {
 		r.healthRoute = healthRoute
+	}
+}
+
+func WithAuthRoute(authRoute *AuthRoute) Options {
+	return func(r *Register) {
+		r.authRoute = authRoute
 	}
 }
 
@@ -59,6 +66,7 @@ func (r *Register) RegisterRoutes() http.Handler {
 	router.NotFound = http.HandlerFunc(helper.HTTPRouterNotFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(helper.HTTPRouterMethodNotAllowedResponse)
 	r.healthRoute.HealthRoutes(router)
+	r.authRoute.AuthRoutes(router)
 	r.movieRoute.MovieRoutes(router)
 	r.genreRoute.GenreRoutes(router)
 	r.rankRoute.RankRoutes(router)
