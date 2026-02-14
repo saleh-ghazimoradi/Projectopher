@@ -52,7 +52,8 @@ func (t *tokenRepository) DeleteRefreshToken(ctx context.Context, token string) 
 }
 
 func (t *tokenRepository) DeleteRefreshTokenById(ctx context.Context, id string) error {
-	if _, err := t.collection.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
+	tokenId, _ := t.oId(id)
+	if _, err := t.collection.DeleteOne(ctx, bson.M{"_id": tokenId}); err != nil {
 		return err
 	}
 	return nil
@@ -63,6 +64,11 @@ func (t *tokenRepository) DeleteExpired(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (t *tokenRepository) oId(id string) (bson.ObjectID, error) {
+	oid, err := bson.ObjectIDFromHex(id)
+	return oid, err
 }
 
 func NewTokenRepository(database *mongo.Database, collectionName string) TokenRepository {
