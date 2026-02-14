@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"github.com/saleh-ghazimoradi/Projectopher/config"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
+	"github.com/saleh-ghazimoradi/Projectopher/utils"
 	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -99,6 +101,36 @@ func (m *Middleware) RateLimit(next http.Handler) http.Handler {
 			return
 		}
 		mu.Unlock()
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) Authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			helper.UnauthorizedResponse(w, "Authorization header is required")
+			return
+		}
+
+		tokenParts := strings.Split(authHeader, " ")
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			helper.UnauthorizedResponse(w, "Invalid authorization header format")
+			return
+		}
+
+		claims, err := utils.ValidateToken(tokenParts[1], m.config.JWT.Secret)
+		if err != nil {
+			helper.UnauthorizedResponse(w, "Invalid token")
+			return
+		}
+
+		ctx := r.Context()
+		ctx = utils.WithFirstName(ctx, claims.FirstName)
+		ctx = utils.WithLastName(ctx, claims.LastName)
+		ctx = utils.WithEmail(ctx, claims.Email)
+		ctx = utils.WithRole(ctx, claims.Role)
+		ctx = utils.WithUserId(ctx, claims.UserId)
 		next.ServeHTTP(w, r)
 	})
 }
