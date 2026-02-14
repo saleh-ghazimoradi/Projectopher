@@ -29,7 +29,7 @@ func GenerateToken(cfg *config.Config, firstname, lastname, email, role, userId 
 		},
 	}
 
-	at := jwt.NewWithClaims(jwt.SigningMethodES256, accessClaims)
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	accessToken, err = at.SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
 		return "", "", err
@@ -47,7 +47,7 @@ func GenerateToken(cfg *config.Config, firstname, lastname, email, role, userId 
 		},
 	}
 
-	rt := jwt.NewWithClaims(jwt.SigningMethodES256, refreshClaims)
+	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	refreshToken, err := rt.SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
 		return "", "", err
