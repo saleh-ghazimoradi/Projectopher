@@ -23,11 +23,3 @@ type User struct {
 	UpdatedAt     time.Time     `bson:"updated_at"`
 	FavoriteGenre []Genre       `bson:"favorite_genre"`
 }
-
-type RefreshToken struct {
-	Id        bson.ObjectID `bson:"_id,omitempty"`
-	UserId    bson.ObjectID `bson:"user_id"`
-	Token     string        `bson:"token"`
-	ExpiresAt time.Time     `bson:"expires_at"`
-	CreatedAt time.Time     `bson:"created_at"`
-}
