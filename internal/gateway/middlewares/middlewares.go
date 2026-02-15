@@ -3,6 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"github.com/saleh-ghazimoradi/Projectopher/config"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
 	"github.com/saleh-ghazimoradi/Projectopher/utils"
 	"github.com/tomasen/realip"
@@ -131,6 +132,22 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 		ctx = utils.WithEmail(ctx, claims.Email)
 		ctx = utils.WithRole(ctx, claims.Role)
 		ctx = utils.WithUserId(ctx, claims.UserId)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) Admin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		role, exists := utils.RoleFromCtx(r.Context())
+		if !exists {
+			helper.ForbiddenResponse(w, "You are not authorized to access this resource")
+			return
+		}
+
+		if role != string(domain.UserRoleAdmin) {
+			helper.ForbiddenResponse(w, "You are not authorized to access this resource")
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
