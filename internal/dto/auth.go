@@ -2,15 +2,14 @@ package dto
 
 import (
 	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
-	"time"
 )
 
 type RegisterReq struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Role      string `json:"role"`
+	FirstName      string  `json:"first_name"`
+	LastName       string  `json:"last_name"`
+	Email          string  `json:"email"`
+	Password       string  `json:"password"`
+	FavoriteGenres []Genre `json:"favorite_genres"`
 }
 
 type LoginReq struct {
@@ -18,26 +17,14 @@ type LoginReq struct {
 	Password string `json:"password"`
 }
 
+type RefreshTokenReq struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 type AuthResp struct {
-	Id            string    `json:"id"`
-	UserId        string    `json:"user_id"`
-	FirstName     string    `json:"first_name"`
-	LastName      string    `json:"last_name"`
-	Email         string    `json:"email"`
-	Role          string    `json:"role"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	FavoriteGenre []Genre   `json:"favorite_genre"`
-}
-
-type RefreshReq struct {
-	RefreshToken string `json:"refresh_token"`
-}
-
-type TokenResp struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"`
+	User         UserResp `json:"user"`
+	AccessToken  string   `json:"access_token"`
+	RefreshToken string   `json:"refresh_token"`
 }
 
 func validateEmail(v *helper.Validator, email string) {
@@ -70,9 +57,12 @@ func ValidateLogin(v *helper.Validator, req *LoginReq) {
 	validatePassword(v, req.Password)
 }
 
+func ValidateRefreshToken(v *helper.Validator, req *RefreshTokenReq) {
+	v.Check(req.RefreshToken != "", "refresh_token", "must be provided")
+}
+
 func ValidateRegister(v *helper.Validator, req *RegisterReq) {
 	validateUserNames(v, req.FirstName, req.LastName)
 	validateEmail(v, req.Email)
 	validatePassword(v, req.Password)
-	validateRole(v, req.Role)
 }
