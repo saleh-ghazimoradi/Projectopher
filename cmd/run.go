@@ -8,7 +8,10 @@ import (
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/handlers"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/middlewares"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/routes"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/repository"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/server"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/service"
 	"log/slog"
 	"os"
 
@@ -63,14 +66,42 @@ var runCmd = &cobra.Command{
 			}
 		}()
 
-		_ = mongodb
+		middleware := middlewares.NewMiddleware(cfg, logger)
+		validator := helper.NewValidator()
 
-		middleware := middlewares.NewMiddleware(logger)
+		movieRepository := repository.NewMovieRepository(mongodb, "movie")
+		genreRepository := repository.NewGenresRepository(mongodb, "genre")
+		rankRepository := repository.NewRankingsRepository(mongodb, "rank")
+		userRepository := repository.NewUsersRepository(mongodb, "user")
+		tokenRepository := repository.NewTokenRepository(mongodb, "token")
+
+		movieService := service.NewMovieService(movieRepository)
+		genreService := service.NewGenreService(genreRepository)
+		rankService := service.NewRankingsService(rankRepository)
+		authService := service.NewAuthService(cfg, userRepository, tokenRepository)
+		userService := service.NewUserService(userRepository)
 
 		healthHandler := handlers.NewHealthHandler(cfg)
+		movieHandler := handlers.NewMovieHandler(movieService, validator)
+		genreHandler := handlers.NewGenreHandler(genreService)
+		rankHandler := handlers.NewRankingHandler(rankService)
+		authHandler := handlers.NewAuthHandler(validator, authService)
+		userHandler := handlers.NewUserHandler(userService)
+
 		healthRoute := routes.NewHealthRoute(healthHandler)
+		movieRoute := routes.NewMovieRoute(movieHandler)
+		genreRoute := routes.NewGenreRoutes(genreHandler)
+		rankRoute := routes.NewRankRoutes(rankHandler)
+		authRoute := routes.NewAuthRoute(authHandler)
+		userRoute := routes.NewUserRoute(userHandler)
+
 		register := routes.NewRegister(
 			routes.WithHealthRoute(healthRoute),
+			routes.WithAuthRoute(authRoute),
+			routes.WithMovieRoute(movieRoute),
+			routes.WithGenreRoute(genreRoute),
+			routes.WithRankRoute(rankRoute),
+			routes.WithUserRoute(userRoute),
 			routes.WithMiddleware(middleware),
 		)
 
