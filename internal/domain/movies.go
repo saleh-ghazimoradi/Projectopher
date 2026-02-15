@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type Movie struct {
 	Id          string
 	ImdbId      string
@@ -9,4 +11,6 @@ type Movie struct {
 	Genre       []Genre
 	AdminReview string
 	Ranking     Ranking
+	CreatedAt   time.Time
+	UpdateAt    time.Time
 }
