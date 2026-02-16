@@ -7,8 +7,8 @@ type CreateMovieReq struct {
 	Title       string  `json:"title"`
 	PosterPath  string  `json:"poster_path"`
 	YoutubeId   string  `json:"youtube_id"`
-	Genre       []Genre `json:"genre"`
 	AdminReview string  `json:"admin_review"`
+	Genre       []Genre `json:"genre"`
 	Ranking     Ranking `json:"ranking"`
 }
 
