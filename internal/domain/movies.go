@@ -12,5 +12,5 @@ type Movie struct {
 	AdminReview string
 	Ranking     Ranking
 	CreatedAt   time.Time
-	UpdateAt    time.Time
+	UpdatedAt   time.Time
 }
