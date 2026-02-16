@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/repository/mongoDTO"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -25,11 +26,13 @@ type userRepository struct {
 }
 
 func (u *userRepository) CreateUser(ctx context.Context, user *domain.User) error {
-	if user.Id.IsZero() {
-		user.Id = bson.NewObjectID()
+	userDTO, err := mongoDTO.FromUserCoreToDTO(user)
+	if err != nil {
+		return err
 	}
 
-	if _, err := u.collection.InsertOne(ctx, user); err != nil {
+	result, err := u.collection.InsertOne(ctx, userDTO)
+	if err != nil {
 		switch {
 		case u.isDuplicateEmailError(err):
 			return ErrDuplicateEmail
@@ -37,26 +40,33 @@ func (u *userRepository) CreateUser(ctx context.Context, user *domain.User) erro
 			return err
 		}
 	}
+
+	if oid, ok := result.InsertedID.(bson.ObjectID); ok {
+		user.Id = oid.Hex()
+	}
+
 	return nil
 }
 
 func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	var user domain.User
-	if err := u.collection.FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
-		switch {
-		case errors.Is(err, mongo.ErrNoDocuments):
+	var userDTO mongoDTO.UserDTO
+
+	err := u.collection.FindOne(ctx, bson.M{"email": email}).Decode(&userDTO)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, ErrRecordNotFound
-		default:
-			return nil, err
 		}
+		return nil, err
 	}
-	return &user, nil
+
+	return mongoDTO.FromUserDTOToCore(&userDTO), nil
 }
 
 func (u *userRepository) GetUserById(ctx context.Context, id string) (*domain.User, error) {
 	uId, _ := u.oId(id)
-	var user domain.User
-	if err := u.collection.FindOne(ctx, bson.M{"_id": uId}).Decode(&user); err != nil {
+	var userDTO mongoDTO.UserDTO
+
+	if err := u.collection.FindOne(ctx, bson.M{"_id": uId}).Decode(&userDTO); err != nil {
 		switch {
 		case errors.Is(err, mongo.ErrNoDocuments):
 			return nil, ErrRecordNotFound
@@ -64,7 +74,7 @@ func (u *userRepository) GetUserById(ctx context.Context, id string) (*domain.Us
 			return nil, err
 		}
 	}
-	return &user, nil
+	return mongoDTO.FromUserDTOToCore(&userDTO), nil
 }
 
 func (u *userRepository) GetUsers(ctx context.Context, offset, limit int64) ([]domain.User, error) {

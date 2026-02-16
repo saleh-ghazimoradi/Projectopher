@@ -1,7 +1,6 @@
 package mongoDTO
 
 import (
-	"fmt"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"time"
@@ -16,19 +15,22 @@ type RefreshTokenDTO struct {
 }
 
 func FromRefreshTokenCoreToDTO(input *domain.RefreshToken) (*RefreshTokenDTO, error) {
-	id, err := bson.ObjectIDFromHex(input.Id)
+	userOID, err := bson.ObjectIDFromHex(input.UserId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid refresh token id: %s", input.Id)
+		return nil, err
 	}
 
-	userId, err := bson.ObjectIDFromHex(input.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("invalid user id: %s", input.UserId)
+	var tokenOID bson.ObjectID
+	if input.Id != "" {
+		tokenOID, err = bson.ObjectIDFromHex(input.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &RefreshTokenDTO{
-		Id:        id,
-		UserId:    userId,
+		Id:        tokenOID,
+		UserId:    userOID,
 		Token:     input.Token,
 		ExpiresAt: input.ExpiresAt,
 		CreatedAt: input.CreatedAt,
