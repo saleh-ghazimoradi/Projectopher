@@ -8,7 +8,6 @@ import (
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/handlers"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/middlewares"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/routes"
-	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/repository"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/server"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/service"
@@ -67,7 +66,6 @@ var runCmd = &cobra.Command{
 		}()
 
 		middleware := middlewares.NewMiddleware(cfg, logger)
-		validator := helper.NewValidator()
 
 		movieRepository := repository.NewMovieRepository(mongodb, "movie")
 		genreRepository := repository.NewGenresRepository(mongodb, "genre")
@@ -82,18 +80,18 @@ var runCmd = &cobra.Command{
 		userService := service.NewUserService(userRepository)
 
 		healthHandler := handlers.NewHealthHandler(cfg)
-		movieHandler := handlers.NewMovieHandler(movieService, validator)
+		movieHandler := handlers.NewMovieHandler(movieService)
 		genreHandler := handlers.NewGenreHandler(genreService)
 		rankHandler := handlers.NewRankingHandler(rankService)
-		authHandler := handlers.NewAuthHandler(validator, authService)
-		userHandler := handlers.NewUserHandler(validator, userService)
+		authHandler := handlers.NewAuthHandler(authService)
+		userHandler := handlers.NewUserHandler(userService)
 
 		healthRoute := routes.NewHealthRoute(healthHandler)
 		movieRoute := routes.NewMovieRoute(middleware, movieHandler)
 		genreRoute := routes.NewGenreRoutes(genreHandler)
 		rankRoute := routes.NewRankRoutes(rankHandler)
 		authRoute := routes.NewAuthRoute(authHandler)
-		userRoute := routes.NewUserRoute(userHandler)
+		userRoute := routes.NewUserRoute(middleware, userHandler)
 
 		register := routes.NewRegister(
 			routes.WithHealthRoute(healthRoute),
