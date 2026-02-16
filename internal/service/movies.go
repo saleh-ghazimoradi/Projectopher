@@ -6,6 +6,7 @@ import (
 	"github.com/saleh-ghazimoradi/Projectopher/internal/dto"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/repository"
+	"time"
 )
 
 type MovieService interface {
@@ -77,44 +78,43 @@ func (m *movieService) toMovie(input *dto.CreateMovieReq) *domain.Movie {
 		}
 	}
 
-	ranking := domain.Ranking{
-		RankingValue: input.Ranking.RankingValue,
-		RankingName:  input.Ranking.RankingName,
-	}
 	return &domain.Movie{
 		ImdbId:      input.ImdbId,
 		Title:       input.Title,
 		PosterPath:  input.PosterPath,
 		YoutubeId:   input.YoutubeId,
-		Genre:       genres,
+		Genres:      genres,
 		AdminReview: input.AdminReview,
-		Ranking:     ranking,
+		Ranking: domain.Ranking{
+			RankingValue: input.Ranking.RankingValue,
+			RankingName:  input.Ranking.RankingName,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 
 func (m *movieService) toMovieRepsDTO(movie *domain.Movie) *dto.MovieResp {
-	genres := make([]dto.Genre, len(movie.Genre))
+	genres := make([]dto.Genre, len(movie.Genres))
 	for i := range genres {
 		genres[i] = dto.Genre{
-			GenreId:   movie.Genre[i].GenreId,
-			GenreName: movie.Genre[i].GenreName,
+			GenreId:   movie.Genres[i].GenreId,
+			GenreName: movie.Genres[i].GenreName,
 		}
 	}
 
-	ranking := dto.Ranking{
-		RankingValue: movie.Ranking.RankingValue,
-		RankingName:  movie.Ranking.RankingName,
-	}
-
 	return &dto.MovieResp{
-		Id:          movie.Id.Hex(),
+		Id:          movie.Id,
 		ImdbId:      movie.ImdbId,
 		Title:       movie.Title,
 		PosterPath:  movie.PosterPath,
 		YoutubeId:   movie.YoutubeId,
 		Genre:       genres,
 		AdminReview: movie.AdminReview,
-		Ranking:     ranking,
+		Ranking: dto.Ranking{
+			RankingValue: movie.Ranking.RankingValue,
+			RankingName:  movie.Ranking.RankingName,
+		},
 	}
 }
 

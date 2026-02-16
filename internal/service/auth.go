@@ -34,7 +34,10 @@ func (a *authService) Register(ctx context.Context, input *dto.RegisterReq) (*dt
 		return nil, repository.ErrDuplicateEmail
 	}
 
-	user := a.toUser(input)
+	user, err := a.toUser(input)
+	if err != nil {
+		return nil, err
+	}
 	if err := a.userRepository.CreateUser(ctx, user); err != nil {
 		return nil, err
 	}
@@ -61,7 +64,7 @@ func (a *authService) RefreshToken(ctx context.Context, input *dto.RefreshTokenR
 		return nil, errors.New("invalid refresh token")
 	}
 
-	refreshToken, err := a.tokenRepository.GetValidRefreshToken(ctx, input.RefreshToken)
+	storedToken, err := a.tokenRepository.GetValidRefreshToken(ctx, input.RefreshToken)
 	if err != nil {
 		return nil, errors.New("refresh token not found or expired")
 	}
@@ -71,7 +74,7 @@ func (a *authService) RefreshToken(ctx context.Context, input *dto.RefreshTokenR
 		return nil, err
 	}
 
-	if err := a.tokenRepository.DeleteRefreshTokenById(ctx, refreshToken.Id.Hex()); err != nil {
+	if err := a.tokenRepository.DeleteRefreshTokenById(ctx, storedToken.Id); err != nil {
 		return nil, err
 	}
 
@@ -79,10 +82,15 @@ func (a *authService) RefreshToken(ctx context.Context, input *dto.RefreshTokenR
 }
 
 func (a *authService) Logout(ctx context.Context, input *dto.RefreshTokenReq) error {
-	return a.tokenRepository.DeleteRefreshTokenById(ctx, input.RefreshToken)
+	return a.tokenRepository.DeleteRefreshToken(ctx, input.RefreshToken)
 }
 
-func (a *authService) toUser(input *dto.RegisterReq) *domain.User {
+func (a *authService) toUser(input *dto.RegisterReq) (*domain.User, error) {
+	hashedPassword, err := utils.HashPassword(input.Password)
+	if err != nil {
+		return nil, err
+	}
+
 	favoriteGenres := make([]domain.Genre, len(input.FavoriteGenres))
 	for i := range favoriteGenres {
 		favoriteGenres[i] = domain.Genre{
@@ -90,21 +98,21 @@ func (a *authService) toUser(input *dto.RegisterReq) *domain.User {
 			GenreName: input.FavoriteGenres[i].GenreName,
 		}
 	}
-	hashedPassword, _ := utils.HashPassword(input.Password)
+
 	return &domain.User{
-		FirstName:     input.FirstName,
-		LastName:      input.LastName,
-		Email:         input.Email,
-		Password:      hashedPassword,
-		Role:          domain.UserRoleUser,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		FavoriteGenre: favoriteGenres,
-	}
+		FirstName:      input.FirstName,
+		LastName:       input.LastName,
+		Email:          input.Email,
+		Password:       hashedPassword,
+		Role:           domain.UserRoleUser,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		FavoriteGenres: favoriteGenres,
+	}, nil
 }
 
 func (a *authService) generateAuthResp(ctx context.Context, user *domain.User) (*dto.AuthResp, error) {
-	accessToken, refreshToken, err := utils.GenerateToken(a.config, user.FirstName, user.LastName, user.Email, string(user.Role), user.Id.Hex())
+	accessToken, refreshToken, err := utils.GenerateToken(a.config, user.FirstName, user.LastName, user.Email, string(user.Role), user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
 	}
@@ -120,24 +128,24 @@ func (a *authService) generateAuthResp(ctx context.Context, user *domain.User) (
 		return nil, fmt.Errorf("failed to create refresh token: %w", err)
 	}
 
-	genres := make([]dto.Genre, len(user.FavoriteGenre))
+	genres := make([]dto.Genre, len(user.FavoriteGenres))
 	for i := range genres {
 		genres[i] = dto.Genre{
-			GenreId:   user.FavoriteGenre[i].GenreId,
-			GenreName: user.FavoriteGenre[i].GenreName,
+			GenreId:   user.FavoriteGenres[i].GenreId,
+			GenreName: user.FavoriteGenres[i].GenreName,
 		}
 	}
 
 	return &dto.AuthResp{
 		User: dto.UserResp{
-			Id:            user.Id.Hex(),
-			FirstName:     user.FirstName,
-			LastName:      user.LastName,
-			Email:         user.Email,
-			Role:          string(user.Role),
-			CreatedAt:     user.CreatedAt,
-			UpdatedAt:     user.UpdatedAt,
-			FavoriteGenre: genres,
+			Id:             user.Id,
+			FirstName:      user.FirstName,
+			LastName:       user.LastName,
+			Email:          user.Email,
+			Role:           string(user.Role),
+			CreatedAt:      user.CreatedAt,
+			UpdatedAt:      user.UpdatedAt,
+			FavoriteGenres: genres,
 		},
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
