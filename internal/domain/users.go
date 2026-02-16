@@ -12,13 +12,13 @@ const (
 )
 
 type User struct {
-	Id            string
-	FirstName     string
-	LastName      string
-	Email         string
-	Password      string
-	Role          UserRole
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	FavoriteGenre []Genre
+	Id             string
+	FirstName      string
+	LastName       string
+	Email          string
+	Password       string
+	Role           UserRole
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	FavoriteGenres []Genre
 }

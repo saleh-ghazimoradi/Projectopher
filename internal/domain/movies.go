@@ -8,7 +8,7 @@ type Movie struct {
 	Title       string
 	PosterPath  string
 	YoutubeId   string
-	Genre       []Genre
+	Genres      []Genre
 	AdminReview string
 	Ranking     Ranking
 	CreatedAt   time.Time
