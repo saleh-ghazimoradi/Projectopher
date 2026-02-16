@@ -10,7 +10,6 @@ import (
 )
 
 type AuthHandler struct {
-	validator   *helper.Validator
 	authService service.AuthService
 }
 
@@ -21,8 +20,9 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto.ValidateRegister(a.validator, &payload)
-	if !a.validator.Valid() {
+	v := helper.NewValidator()
+	dto.ValidateRegister(v, &payload)
+	if !v.Valid() {
 		helper.FailedValidationResponse(w, "Invalid request payload")
 		return
 	}
@@ -49,8 +49,9 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto.ValidateLogin(a.validator, &payload)
-	if !a.validator.Valid() {
+	v := helper.NewValidator()
+	dto.ValidateLogin(v, &payload)
+	if !v.Valid() {
 		helper.FailedValidationResponse(w, "Invalid request payload")
 		return
 	}
@@ -71,8 +72,9 @@ func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto.ValidateRefreshToken(a.validator, &payload)
-	if !a.validator.Valid() {
+	v := helper.NewValidator()
+	dto.ValidateRefreshToken(v, &payload)
+	if !v.Valid() {
 		helper.FailedValidationResponse(w, "Invalid request payload")
 		return
 	}
@@ -93,8 +95,9 @@ func (a *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto.ValidateRefreshToken(a.validator, &payload)
-	if !a.validator.Valid() {
+	v := helper.NewValidator()
+	dto.ValidateRefreshToken(v, &payload)
+	if !v.Valid() {
 		helper.FailedValidationResponse(w, "Invalid request payload")
 		return
 	}
@@ -107,9 +110,8 @@ func (a *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	helper.SuccessResponse(w, "Logout successfully", nil)
 }
 
-func NewAuthHandler(validator *helper.Validator, authService service.AuthService) *AuthHandler {
+func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{
-		validator:   validator,
 		authService: authService,
 	}
 }

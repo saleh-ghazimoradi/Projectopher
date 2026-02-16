@@ -12,7 +12,6 @@ import (
 )
 
 type UserHandler struct {
-	validator   *helper.Validator
 	userService service.UserService
 }
 
@@ -75,8 +74,9 @@ func (u *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto.ValidateUserUpdateReq(u.validator, &payload)
-	if !u.validator.Valid() {
+	v := helper.NewValidator()
+	dto.ValidateUserUpdateReq(v, &payload)
+	if !v.Valid() {
 		helper.FailedValidationResponse(w, "Validation failed")
 		return
 	}
@@ -114,9 +114,8 @@ func (u *UserHandler) DeleteProfile(w http.ResponseWriter, r *http.Request) {
 	helper.SuccessResponse(w, "User successfully deleted", nil)
 }
 
-func NewUserHandler(validator *helper.Validator, userService service.UserService) *UserHandler {
+func NewUserHandler(userService service.UserService) *UserHandler {
 	return &UserHandler{
-		validator:   validator,
 		userService: userService,
 	}
 }

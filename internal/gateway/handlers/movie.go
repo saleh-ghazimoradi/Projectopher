@@ -13,7 +13,6 @@ import (
 
 type MovieHandler struct {
 	movieService service.MovieService
-	validator    *helper.Validator
 }
 
 func (m *MovieHandler) AddMovie(w http.ResponseWriter, r *http.Request) {
@@ -23,8 +22,9 @@ func (m *MovieHandler) AddMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto.ValidateCreateMovieReq(m.validator, &payload)
-	if !m.validator.Valid() {
+	v := helper.NewValidator()
+	dto.ValidateCreateMovieReq(v, &payload)
+	if !v.Valid() {
 		helper.FailedValidationResponse(w, "Validation failed")
 		return
 	}
@@ -84,9 +84,8 @@ func (m *MovieHandler) GetMovies(w http.ResponseWriter, r *http.Request) {
 	helper.PaginatedSuccessResponse(w, "Movies successfully retrieved", movies, *meta)
 }
 
-func NewMovieHandler(movieService service.MovieService, validator *helper.Validator) *MovieHandler {
+func NewMovieHandler(movieService service.MovieService) *MovieHandler {
 	return &MovieHandler{
 		movieService: movieService,
-		validator:    validator,
 	}
 }
