@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/repository/mongoDTO"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -22,10 +23,16 @@ func (r *rankingRepository) GetRankings(ctx context.Context) ([]domain.Ranking, 
 	}
 	defer cursor.Close(ctx)
 
-	var rankings []domain.Ranking
-	if err := cursor.All(ctx, &rankings); err != nil {
+	var dtos []mongoDTO.RankingDTO
+	if err = cursor.All(ctx, &dtos); err != nil {
 		return nil, err
 	}
+
+	rankings := make([]domain.Ranking, len(dtos))
+	for i := range dtos {
+		rankings[i] = *mongoDTO.FromRankingDTOToCore(&dtos[i])
+	}
+
 	return rankings, nil
 }
 

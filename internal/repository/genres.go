@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/repository/mongoDTO"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -22,9 +23,14 @@ func (g *genreRepository) GetGenres(ctx context.Context) ([]domain.Genre, error)
 	}
 	defer cursor.Close(ctx)
 
-	var genres []domain.Genre
-	if err = cursor.All(ctx, &genres); err != nil {
+	var dtos []mongoDTO.GenreDTO
+	if err = cursor.All(ctx, &dtos); err != nil {
 		return nil, err
+	}
+
+	genres := make([]domain.Genre, len(dtos))
+	for i := range dtos {
+		genres[i] = *mongoDTO.FromGenreDTOToCore(&dtos[i])
 	}
 
 	return genres, nil
