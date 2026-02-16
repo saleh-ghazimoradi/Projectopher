@@ -49,6 +49,12 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	dto.ValidateLogin(a.validator, &payload)
+	if !a.validator.Valid() {
+		helper.FailedValidationResponse(w, "Invalid request payload")
+		return
+	}
+
 	login, err := a.authService.Login(r.Context(), &payload)
 	if err != nil {
 		helper.InternalServerError(w, "Failed to login", err)
@@ -65,6 +71,12 @@ func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	dto.ValidateRefreshToken(a.validator, &payload)
+	if !a.validator.Valid() {
+		helper.FailedValidationResponse(w, "Invalid request payload")
+		return
+	}
+
 	refreshToken, err := a.authService.RefreshToken(r.Context(), &payload)
 	if err != nil {
 		helper.InternalServerError(w, "Failed to refresh token", err)
@@ -78,6 +90,12 @@ func (a *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var payload dto.RefreshTokenReq
 	if err := helper.ReadJSON(w, r, &payload); err != nil {
 		helper.BadRequestResponse(w, "Invalid request payload", err)
+		return
+	}
+
+	dto.ValidateRefreshToken(a.validator, &payload)
+	if !a.validator.Valid() {
+		helper.FailedValidationResponse(w, "Invalid request payload")
 		return
 	}
 
