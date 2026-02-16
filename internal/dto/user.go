@@ -17,12 +17,25 @@ type UserResp struct {
 }
 
 type UpdateUserReq struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Password  string `json:"password"`
+	FirstName *string `json:"first_name"`
+	LastName  *string `json:"last_name"`
 }
 
-func ValidateUpdateUserReq(v *helper.Validator, req *UpdateUserReq) {
-	validateUserNames(v, req.FirstName, req.LastName)
-	validatePassword(v, req.Password)
+func validateFirstName(v *helper.Validator, firstName *string) {
+	if firstName != nil {
+		v.Check(len(*firstName) >= 2, "firstname", "must be greater than two characters")
+		v.Check(len(*firstName) <= 30, "firstname", "must not be greater than 30 characters")
+	}
+}
+
+func validateLastName(v *helper.Validator, lastName *string) {
+	if lastName != nil {
+		v.Check(len(*lastName) >= 2, "lastname", "must be greater than two characters")
+		v.Check(len(*lastName) <= 30, "lastname", "must not be greater than 30 characters")
+	}
+}
+
+func ValidateUserUpdateReq(v *helper.Validator, req *UpdateUserReq) {
+	validateFirstName(v, req.FirstName)
+	validateLastName(v, req.LastName)
 }
