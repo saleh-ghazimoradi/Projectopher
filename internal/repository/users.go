@@ -84,21 +84,29 @@ func (u *userRepository) GetUsers(ctx context.Context, offset, limit int64) ([]d
 	}
 	defer cursor.Close(ctx)
 
-	var users []domain.User
-	if err := cursor.All(ctx, &users); err != nil {
+	var dtos []mongoDTO.UserDTO
+	if err := cursor.All(ctx, &dtos); err != nil {
 		return nil, err
 	}
+
+	users := make([]domain.User, len(dtos))
+	for i := range dtos {
+		users[i] = *mongoDTO.FromUserDTOToCore(&dtos[i])
+	}
+
 	return users, nil
 }
 
 func (u *userRepository) UpdateUser(ctx context.Context, user *domain.User) error {
+	oid, _ := u.oId(user.Id)
 	update := bson.M{
 		"$set": bson.M{
 			"first_name": user.FirstName,
 			"last_name":  user.LastName,
 		},
 	}
-	result, err := u.collection.UpdateOne(ctx, bson.M{"_id": user.Id}, update)
+
+	result, err := u.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
 	if err != nil {
 		return err
 	}
