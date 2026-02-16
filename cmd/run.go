@@ -86,10 +86,10 @@ var runCmd = &cobra.Command{
 		genreHandler := handlers.NewGenreHandler(genreService)
 		rankHandler := handlers.NewRankingHandler(rankService)
 		authHandler := handlers.NewAuthHandler(validator, authService)
-		userHandler := handlers.NewUserHandler(userService)
+		userHandler := handlers.NewUserHandler(validator, userService)
 
 		healthRoute := routes.NewHealthRoute(healthHandler)
-		movieRoute := routes.NewMovieRoute(movieHandler)
+		movieRoute := routes.NewMovieRoute(middleware, movieHandler)
 		genreRoute := routes.NewGenreRoutes(genreHandler)
 		rankRoute := routes.NewRankRoutes(rankHandler)
 		authRoute := routes.NewAuthRoute(authHandler)
