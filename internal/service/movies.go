@@ -2,29 +2,39 @@ package service
 
 import (
 	"context"
+	"errors"
+	"github.com/saleh-ghazimoradi/Projectopher/config"
+	"github.com/saleh-ghazimoradi/Projectopher/infra/AI"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/dto"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/repository"
-	"time"
 )
 
 type MovieService interface {
 	CreateMovie(ctx context.Context, input *dto.CreateMovieReq) (*dto.MovieResp, error)
 	GetMovie(ctx context.Context, id string) (*dto.MovieResp, error)
 	GetMovies(ctx context.Context, page, limit int64) ([]dto.MovieResp, *helper.PaginatedMeta, error)
+	UpdateAdminReview(ctx context.Context, imdbId string, input *dto.AdminReviewUpdateReq) (*dto.AdminReviewResp, error)
+	GetRecommendedMovies(ctx context.Context, userId string) ([]dto.MovieResp, error)
+	GetGenres(ctx context.Context) ([]dto.Genre, error)
 }
 
 type movieService struct {
-	movieRepository repository.MovieRepository
+	movieRepository   repository.MovieRepository
+	rankingRepository repository.RankingRepository
+	genreRepository   repository.GenreRepository
+	userRepository    repository.UserRepository
+	openAI            AI.OpenAI
+	config            *config.Config
 }
 
 func (m *movieService) CreateMovie(ctx context.Context, input *dto.CreateMovieReq) (*dto.MovieResp, error) {
-	movie := m.toMovie(input)
+	movie := dto.FromCreateMovieReq(input)
 	if err := m.movieRepository.CreateMovie(ctx, movie); err != nil {
 		return nil, err
 	}
-	return m.toMovieRepsDTO(movie), nil
+	return dto.ToMovieResp(movie), nil
 }
 
 func (m *movieService) GetMovie(ctx context.Context, id string) (*dto.MovieResp, error) {
@@ -32,7 +42,7 @@ func (m *movieService) GetMovie(ctx context.Context, id string) (*dto.MovieResp,
 	if err != nil {
 		return nil, err
 	}
-	return m.toMovieRepsDTO(movie), nil
+	return dto.ToMovieResp(movie), nil
 }
 
 func (m *movieService) GetMovies(ctx context.Context, page, limit int64) ([]dto.MovieResp, *helper.PaginatedMeta, error) {
@@ -54,8 +64,8 @@ func (m *movieService) GetMovies(ctx context.Context, page, limit int64) ([]dto.
 	movies, err := m.movieRepository.GetMovies(ctx, offset, limit)
 
 	response := make([]dto.MovieResp, len(movies))
-	for i := range movies {
-		response[i] = *m.toMovieRepsDTO(&movies[i])
+	for i, movie := range movies {
+		response[i] = *dto.ToMovieResp(&movie)
 	}
 
 	totalPages := (total + limit - 1) / limit
@@ -69,57 +79,86 @@ func (m *movieService) GetMovies(ctx context.Context, page, limit int64) ([]dto.
 	return response, meta, nil
 }
 
-func (m *movieService) toMovie(input *dto.CreateMovieReq) *domain.Movie {
-	genres := make([]domain.Genre, len(input.Genre))
-	for i := range genres {
-		genres[i] = domain.Genre{
-			GenreId:   input.Genre[i].GenreId,
-			GenreName: input.Genre[i].GenreName,
+func (m *movieService) UpdateAdminReview(ctx context.Context, imdbId string, input *dto.AdminReviewUpdateReq) (*dto.AdminReviewResp, error) {
+	rankings, err := m.rankingRepository.GetRankings(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var sentiments []string
+	for _, r := range rankings {
+		if r.RankingValue != 999 {
+			sentiments = append(sentiments, r.RankingName)
 		}
 	}
 
-	return &domain.Movie{
-		ImdbId:      input.ImdbId,
-		Title:       input.Title,
-		PosterPath:  input.PosterPath,
-		YoutubeId:   input.YoutubeId,
-		Genres:      genres,
+	sentiment, err := m.openAI.GetSentiment(ctx, input.AdminReview, sentiments)
+	if err != nil {
+		return nil, err
+	}
+
+	var rankVal int
+	for _, r := range rankings {
+		if r.RankingName == sentiment {
+			rankVal = r.RankingValue
+			break
+		}
+	}
+
+	if rankVal == 0 {
+		return nil, errors.New("invalid sentiment ranking")
+	}
+
+	ranking := &domain.Ranking{
+		RankingValue: rankVal,
+		RankingName:  sentiment,
+	}
+
+	err = m.movieRepository.UpdateReview(ctx, imdbId, input.AdminReview, ranking)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.AdminReviewResp{
+		RankingName: sentiment,
 		AdminReview: input.AdminReview,
-		Ranking: domain.Ranking{
-			RankingValue: input.Ranking.RankingValue,
-			RankingName:  input.Ranking.RankingName,
-		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
+	}, nil
 }
 
-func (m *movieService) toMovieRepsDTO(movie *domain.Movie) *dto.MovieResp {
-	genres := make([]dto.Genre, len(movie.Genres))
-	for i := range genres {
-		genres[i] = dto.Genre{
-			GenreId:   movie.Genres[i].GenreId,
-			GenreName: movie.Genres[i].GenreName,
-		}
+func (m *movieService) GetRecommendedMovies(ctx context.Context, userId string) ([]dto.MovieResp, error) {
+	limit := m.config.Application.MovieLimit
+	if limit <= 0 {
+		limit = 5
 	}
 
-	return &dto.MovieResp{
-		Id:          movie.Id,
-		ImdbId:      movie.ImdbId,
-		Title:       movie.Title,
-		PosterPath:  movie.PosterPath,
-		YoutubeId:   movie.YoutubeId,
-		Genre:       genres,
-		AdminReview: movie.AdminReview,
-		Ranking: dto.Ranking{
-			RankingValue: movie.Ranking.RankingValue,
-			RankingName:  movie.Ranking.RankingName,
-		},
+	genres, err := m.userRepository.GetUserFavoriteGenres(ctx, userId)
+	if err != nil {
+		return nil, err
 	}
+
+	movies, err := m.movieRepository.GetRecommendedMovies(ctx, genres, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.ToMoviesResp(movies), nil
 }
 
-func NewMovieService(movieRepository repository.MovieRepository) MovieService {
+func (m *movieService) GetGenres(ctx context.Context) ([]dto.Genre, error) {
+	genres, err := m.genreRepository.GetGenres(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return dto.ToGenresResp(genres), nil
+}
+
+func NewMovieService(movieRepository repository.MovieRepository, rankingRepository repository.RankingRepository, genreRepository repository.GenreRepository, userRepository repository.UserRepository, openAI AI.OpenAI, config *config.Config) MovieService {
 	return &movieService{
-		movieRepository: movieRepository,
+		movieRepository:   movieRepository,
+		rankingRepository: rankingRepository,
+		genreRepository:   genreRepository,
+		userRepository:    userRepository,
+		openAI:            openAI,
+		config:            config,
 	}
 }
