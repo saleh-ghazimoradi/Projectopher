@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/saleh-ghazimoradi/Projectopher/config"
+	"github.com/saleh-ghazimoradi/Projectopher/infra/AI"
 	"github.com/saleh-ghazimoradi/Projectopher/infra/mongodb"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/handlers"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/gateway/middlewares"
@@ -11,6 +12,7 @@ import (
 	"github.com/saleh-ghazimoradi/Projectopher/internal/repository"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/server"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/service"
+	"github.com/tmc/langchaingo/llms/openai"
 	"log/slog"
 	"os"
 
@@ -66,6 +68,13 @@ var runCmd = &cobra.Command{
 		}()
 
 		middleware := middlewares.NewMiddleware(cfg, logger)
+		llm, err := openai.New(openai.WithToken(cfg.OpenAI.ApiKey))
+		if err != nil {
+			logger.Error("failed to init openai", "error", err.Error())
+			os.Exit(1)
+		}
+
+		openAI := AI.NewOpenAI(cfg, llm)
 
 		movieRepository := repository.NewMovieRepository(mongodb, "movie")
 		genreRepository := repository.NewGenresRepository(mongodb, "genre")
@@ -73,23 +82,17 @@ var runCmd = &cobra.Command{
 		userRepository := repository.NewUsersRepository(mongodb, "user")
 		tokenRepository := repository.NewTokenRepository(mongodb, "token")
 
-		movieService := service.NewMovieService(movieRepository)
-		genreService := service.NewGenreService(genreRepository)
-		rankService := service.NewRankingsService(rankRepository)
+		movieService := service.NewMovieService(movieRepository, rankRepository, genreRepository, userRepository, openAI, cfg)
 		authService := service.NewAuthService(cfg, userRepository, tokenRepository)
 		userService := service.NewUserService(userRepository)
 
 		healthHandler := handlers.NewHealthHandler(cfg)
 		movieHandler := handlers.NewMovieHandler(movieService)
-		genreHandler := handlers.NewGenreHandler(genreService)
-		rankHandler := handlers.NewRankingHandler(rankService)
 		authHandler := handlers.NewAuthHandler(authService)
 		userHandler := handlers.NewUserHandler(userService)
 
 		healthRoute := routes.NewHealthRoute(healthHandler)
 		movieRoute := routes.NewMovieRoute(middleware, movieHandler)
-		genreRoute := routes.NewGenreRoutes(genreHandler)
-		rankRoute := routes.NewRankRoutes(rankHandler)
 		authRoute := routes.NewAuthRoute(authHandler)
 		userRoute := routes.NewUserRoute(middleware, userHandler)
 
@@ -97,8 +100,6 @@ var runCmd = &cobra.Command{
 			routes.WithHealthRoute(healthRoute),
 			routes.WithAuthRoute(authRoute),
 			routes.WithMovieRoute(movieRoute),
-			routes.WithGenreRoute(genreRoute),
-			routes.WithRankRoute(rankRoute),
 			routes.WithUserRoute(userRoute),
 			routes.WithMiddleware(middleware),
 		)
