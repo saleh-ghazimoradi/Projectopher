@@ -18,11 +18,18 @@ type Config struct {
 	MongoDB     MongoDB
 	RateLimiter RateLimiter
 	JWT         JWT
+	OpenAI      OpenAI
+}
+
+type OpenAI struct {
+	ApiKey             string `env:"OPENAI_API_KEY"`
+	BasePromptTemplate string `env:"OPENAI_BASE_PROMPT_TEMPLATE"`
 }
 
 type Application struct {
 	Version     string `env:"VERSION"`
 	Environment string `env:"ENVIRONMENT"`
+	MovieLimit  int64  `env:"MOVIE_LIMIT"`
 }
 
 type JWT struct {
