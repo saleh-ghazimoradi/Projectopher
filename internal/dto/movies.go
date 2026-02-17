@@ -1,6 +1,9 @@
 package dto
 
-import "github.com/saleh-ghazimoradi/Projectopher/internal/helper"
+import (
+	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
+	"github.com/saleh-ghazimoradi/Projectopher/internal/helper"
+)
 
 type CreateMovieReq struct {
 	ImdbId      string  `json:"imdb_id"`
@@ -21,6 +24,75 @@ type MovieResp struct {
 	Genre       []Genre `json:"genre"`
 	AdminReview string  `json:"admin_review"`
 	Ranking     Ranking `json:"ranking"`
+}
+
+func ToMovieResp(movie *domain.Movie) *MovieResp {
+	genres := make([]Genre, len(movie.Genres))
+	for i, g := range movie.Genres {
+		genres[i] = Genre{
+			GenreId:   g.GenreId,
+			GenreName: g.GenreName,
+		}
+	}
+
+	return &MovieResp{
+		Id:          movie.Id,
+		ImdbId:      movie.ImdbId,
+		Title:       movie.Title,
+		PosterPath:  movie.PosterPath,
+		YoutubeId:   movie.YoutubeId,
+		Genre:       genres,
+		AdminReview: movie.AdminReview,
+		Ranking: Ranking{
+			RankingValue: movie.Ranking.RankingValue,
+			RankingName:  movie.Ranking.RankingName,
+		},
+	}
+}
+
+func ToMoviesResp(movies []domain.Movie) []MovieResp {
+	DTOs := make([]MovieResp, len(movies))
+	for i, movie := range movies {
+		DTOs[i] = *ToMovieResp(&movie)
+	}
+	return DTOs
+}
+
+func FromCreateMovieReq(dto *CreateMovieReq) *domain.Movie {
+	genres := make([]domain.Genre, len(dto.Genre))
+	for i, g := range dto.Genre {
+		genres[i] = domain.Genre{
+			GenreId:   g.GenreId,
+			GenreName: g.GenreName,
+		}
+	}
+	return &domain.Movie{
+		ImdbId:      dto.ImdbId,
+		Title:       dto.Title,
+		PosterPath:  dto.PosterPath,
+		YoutubeId:   dto.YoutubeId,
+		Genres:      genres,
+		AdminReview: dto.AdminReview,
+		Ranking: domain.Ranking{
+			RankingValue: dto.Ranking.RankingValue,
+			RankingName:  dto.Ranking.RankingName,
+		},
+	}
+}
+
+func ToGenreResp(genre *domain.Genre) *Genre {
+	return &Genre{
+		GenreId:   genre.GenreId,
+		GenreName: genre.GenreName,
+	}
+}
+
+func ToGenresResp(genres []domain.Genre) []Genre {
+	DTOs := make([]Genre, len(genres))
+	for i, g := range genres {
+		DTOs[i] = *ToGenreResp(&g)
+	}
+	return DTOs
 }
 
 func validateImdbId(v *helper.Validator, imdbId string) {
