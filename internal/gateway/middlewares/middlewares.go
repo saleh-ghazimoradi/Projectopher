@@ -132,6 +132,8 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 		ctx = utils.WithEmail(ctx, claims.Email)
 		ctx = utils.WithRole(ctx, claims.Role)
 		ctx = utils.WithUserId(ctx, claims.UserId)
+
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }
