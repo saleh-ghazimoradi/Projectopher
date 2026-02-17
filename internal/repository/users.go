@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/repository/mongoDTO"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -16,6 +17,7 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserById(ctx context.Context, id string) (*domain.User, error)
 	GetUsers(ctx context.Context, offset, limit int64) ([]domain.User, error)
+	GetUserFavoriteGenres(ctx context.Context, userId string) ([]string, error)
 	UpdateUser(ctx context.Context, user *domain.User) error
 	DeleteUser(ctx context.Context, id string) error
 	CountUser(ctx context.Context) (int64, error)
@@ -95,6 +97,46 @@ func (u *userRepository) GetUsers(ctx context.Context, offset, limit int64) ([]d
 	}
 
 	return users, nil
+}
+
+func (u *userRepository) GetUserFavoriteGenres(ctx context.Context, userId string) ([]string, error) {
+	oid, err := u.oId(userId)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id: %w", err)
+	}
+
+	filter := bson.D{{Key: "_id", Value: oid}}
+
+	projection := bson.M{
+		"favorite_genres": 1,
+		"_id":             0,
+	}
+
+	opts := options.FindOne().SetProjection(projection)
+
+	var result struct {
+		FavoriteGenres []struct {
+			GenreId   int    `bson:"genre_id"`
+			GenreName string `bson:"genre_name"`
+		} `bson:"favorite_genres"`
+	}
+
+	err = u.collection.FindOne(ctx, filter, opts).Decode(&result)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return []string{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("findOne failed: %w", err)
+	}
+
+	var genreNames []string
+	for _, g := range result.FavoriteGenres {
+		if g.GenreName != "" {
+			genreNames = append(genreNames, g.GenreName)
+		}
+	}
+
+	return genreNames, nil
 }
 
 func (u *userRepository) UpdateUser(ctx context.Context, user *domain.User) error {
