@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/domain"
 	"github.com/saleh-ghazimoradi/Projectopher/internal/repository/mongoDTO"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -14,6 +15,8 @@ type MovieRepository interface {
 	CreateMovie(ctx context.Context, movie *domain.Movie) error
 	GetMovie(ctx context.Context, imdbId string) (*domain.Movie, error)
 	GetMovies(ctx context.Context, offset, limit int64) ([]domain.Movie, error)
+	GetRecommendedMovies(ctx context.Context, genres []string, limit int64) ([]domain.Movie, error)
+	UpdateReview(ctx context.Context, imdbId string, adminReview string, ranking *domain.Ranking) error
 	CountMovies(ctx context.Context) (int64, error)
 }
 
@@ -60,17 +63,59 @@ func (m *movieRepository) GetMovies(ctx context.Context, offset, limit int64) ([
 	}
 	defer cursor.Close(ctx)
 
-	var dtos []mongoDTO.MovieDTO
-	if err := cursor.All(ctx, &dtos); err != nil {
+	var DTOs []mongoDTO.MovieDTO
+	if err := cursor.All(ctx, &DTOs); err != nil {
 		return nil, err
 	}
 
-	movies := make([]domain.Movie, len(dtos))
-	for i := range dtos {
-		movies[i] = *mongoDTO.FromMovieDTOToCore(&dtos[i])
+	movies := make([]domain.Movie, len(DTOs))
+	for i := range DTOs {
+		movies[i] = *mongoDTO.FromMovieDTOToCore(&DTOs[i])
 	}
 
 	return movies, nil
+}
+
+func (m *movieRepository) GetRecommendedMovies(ctx context.Context, genres []string, limit int64) ([]domain.Movie, error) {
+	if len(genres) == 0 {
+		return []domain.Movie{}, nil
+	}
+
+	filter := bson.D{
+		{Key: "genre.genre_name", Value: bson.D{
+			{Key: "$in", Value: genres},
+		}},
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "ranking.ranking_value", Value: 1}}).
+		SetLimit(limit)
+
+	cursor, err := m.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find recommended movies: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var DTOs []mongoDTO.MovieDTO
+	if err = cursor.All(ctx, &DTOs); err != nil {
+		return nil, fmt.Errorf("failed to decode mongoDTO: %w", err)
+	}
+
+	movies := make([]domain.Movie, len(DTOs))
+	for i := range DTOs {
+		movies[i] = *mongoDTO.FromMovieDTOToCore(&DTOs[i])
+	}
+
+	return movies, nil
+}
+
+func (m *movieRepository) UpdateReview(ctx context.Context, imdbId string, adminReview string, ranking *domain.Ranking) error {
+	_, err := m.collection.UpdateOne(ctx, bson.M{"imdb_id": imdbId}, bson.M{"$set": bson.M{
+		"admin_review": adminReview,
+		"ranking":      ranking,
+	}})
+	return err
 }
 
 func (m *movieRepository) CountMovies(ctx context.Context) (int64, error) {
