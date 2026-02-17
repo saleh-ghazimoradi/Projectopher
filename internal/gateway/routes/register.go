@@ -11,8 +11,6 @@ type Register struct {
 	healthRoute *HealthRoute
 	authRoute   *AuthRoute
 	movieRoute  *MovieRoute
-	genreRoute  *GenreRoute
-	rankRoute   *RankRoute
 	userRoute   *UserRoute
 	middlewares *middlewares.Middleware
 }
@@ -37,18 +35,6 @@ func WithMovieRoute(movieRoute *MovieRoute) Options {
 	}
 }
 
-func WithGenreRoute(genreRoute *GenreRoute) Options {
-	return func(r *Register) {
-		r.genreRoute = genreRoute
-	}
-}
-
-func WithRankRoute(rankRoute *RankRoute) Options {
-	return func(r *Register) {
-		r.rankRoute = rankRoute
-	}
-}
-
 func WithUserRoute(userRoute *UserRoute) Options {
 	return func(r *Register) {
 		r.userRoute = userRoute
@@ -68,8 +54,6 @@ func (r *Register) RegisterRoutes() http.Handler {
 	r.healthRoute.HealthRoutes(router)
 	r.authRoute.AuthRoutes(router)
 	r.movieRoute.MovieRoutes(router)
-	r.genreRoute.GenreRoutes(router)
-	r.rankRoute.RankRoutes(router)
 	r.userRoute.UserRoutes(router)
 	return r.middlewares.Recover(r.middlewares.Logging(r.middlewares.CORS(r.middlewares.RateLimit(router))))
 }
